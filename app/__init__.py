@@ -75,26 +75,31 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # Configurar APScheduler para tareas programadas
-    scheduler = BackgroundScheduler()
+    # Configurar APScheduler SOLO en el proceso principal (evitar múltiples schedulers en gunicorn)
+    # Verificar si es el proceso principal usando la variable de entorno WERKZEUG_RUN_MAIN
+    # o si no está usando gunicorn (desarrollo local)
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or os.environ.get('SCHEDULER_ENABLED') == 'true':
+        scheduler = BackgroundScheduler()
 
-    # Importar TokenService dentro de app_context
-    from .services.token.token_service import TokenService
+        # Importar TokenService dentro de app_context
+        from .services.token.token_service import TokenService
 
-    # Tarea para eliminar tokens expirados cada 24 horas a las 2:00 PM
-    scheduler.add_job(
-        func=lambda: app.app_context().push() or TokenService.deleteExpiredTokens(),
-        trigger=CronTrigger(hour=14, minute=0),
-        id="delete_expired_tokens",
-        name="Eliminar tokens expirados diariamente",
-        replace_existing=True
-    )
+        # Tarea para eliminar tokens expirados cada 24 horas a las 3:00 PM
+        scheduler.add_job(
+            func=lambda: app.app_context().push() or TokenService.deleteExpiredTokens(),
+            trigger=CronTrigger(hour=15, minute=0),
+            id="delete_expired_tokens",
+            name="Eliminar tokens expirados diariamente",
+            replace_existing=True
+        )
 
-    # Iniciar el scheduler
-    scheduler.start()
-    print("[APScheduler] Scheduler iniciado - Limpieza de tokens programada para las 2:00 PM diariamente")
+        # Iniciar el scheduler
+        scheduler.start()
+        print("[APScheduler] Scheduler iniciado - Limpieza de tokens programada para las 3:00 PM diariamente")
 
-    # Asegurar que el scheduler se detenga cuando la aplicación se cierre
-    atexit.register(lambda: scheduler.shutdown())
+        # Asegurar que el scheduler se detenga cuando la aplicación se cierre
+        atexit.register(lambda: scheduler.shutdown())
+    else:
+        print("[APScheduler] Scheduler deshabilitado en este worker (evitar duplicados)")
 
     return app
