@@ -76,10 +76,12 @@ class TokenService:
 
         except Exception as e:
             db.session.rollback()
+            # Los errores de deadlock son esperados cuando múltiples workers intentan eliminar
+            # al mismo tiempo. Solo registramos en log sin imprimir en consola para evitar ruido.
             LogService.create_log(
                 {
                     "module": f"{TokenService.__name__}.{TokenService.deleteExpiredTokens.__name__}",
                     "message": f"Error al eliminar tokens expirados: {str(e)}",
                 }
             )
-            print(f"[APScheduler] Error al eliminar tokens expirados: {str(e)}")
+            pass
