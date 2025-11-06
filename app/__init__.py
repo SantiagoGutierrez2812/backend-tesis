@@ -45,7 +45,7 @@ def create_app():
                     "http://localhost:5173",
                     "https://frontend-tesis-dusky.vercel.app"
                 ],         
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"],
                 "supports_credentials": True
             }
